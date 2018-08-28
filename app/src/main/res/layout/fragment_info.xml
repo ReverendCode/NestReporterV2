@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -143,7 +143,8 @@
                 android:layout_height="wrap_content"
                 android:elevation="0dp"
                 android:text="Set Date"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                android:onClick="onClickSetDate"/>
         </TableRow>
 
         <TableRow
@@ -230,19 +231,23 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tableRow9">
 
-            <CheckBox
+            <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_nest_verified"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Nest Verified" />
+                android:text="Nest Verified"
+                app:column="nest_verified"
+                android:onClick="onSetCheckBox"/>
 
-            <CheckBox
+            <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_nest_not_verified"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Nest Not Verified" />
+                android:text="Nest Not Verified"
+                app:column="nest_not_verified"
+                android:onClick="onSetCheckBox"/>
         </TableRow>
 
         <TableRow
@@ -257,19 +262,23 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tableRow10">
 
-            <CheckBox
+            <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_nest_relocated"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Nest Relocated" />
+                android:text="Nest Relocated"
+                app:column="nest_relocated"
+                android:onClick="onSetCheckBox"/>
 
-            <CheckBox
+            <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_false_crawl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="False Crawl" />
+                android:text="False Crawl"
+                app:column="false_crawl"
+                android:onClick="onSetCheckBox"/>
         </TableRow>
 
 
@@ -284,11 +293,13 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tableRow11">
 
-            <CheckBox
+            <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_possible_false_crawl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Possible False Crawl" />
+                android:text="Possible False Crawl"
+                app:column="possible_false_crawl"
+                android:onClick="onSetCheckBox"/>
         </TableRow>
 
         <TableRow
@@ -302,18 +313,23 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tableRow12"
             >
-            <CheckBox
+            <com.vaporware.nestreporterv2.SCheckBox
+
                 android:id="@+id/bool_abandoned_body_pits"
                 android:layout_weight="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Abandoned Body Pits"/>
-            <CheckBox
+                android:text="Abandoned Body Pits"
+                app:column="abandoned_body_pits"
+                android:onClick="onSetCheckBox"/>
+            <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_abandoned_egg_cavities"
                 android:layout_weight="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Abandoned Egg Cavities"/>
+                android:text="Abandoned Egg Cavities"
+                app:column="abandoned_egg_cavities"
+                android:onClick="onSetCheckBox"/>
         </TableRow>
         <TableRow
             android:id="@+id/tableRow14"
@@ -326,12 +342,14 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tableRow13"
             >
-            <CheckBox
+            <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_no_digging"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="No Digging"
+                app:column="no_digging"
+                android:onClick="onSetCheckBox"
                 />
         </TableRow>
         <TableRow
@@ -370,7 +388,8 @@
                 android:layout_weight="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                >
 
                 <RadioButton
                     android:id="@+id/radioButton4"
