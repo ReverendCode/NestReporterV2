@@ -322,6 +322,7 @@
                 android:text="Abandoned Body Pits"
                 app:column="abandoned_body_pits"
                 android:onClick="onSetCheckBox"/>
+
             <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_abandoned_egg_cavities"
                 android:layout_weight="1"

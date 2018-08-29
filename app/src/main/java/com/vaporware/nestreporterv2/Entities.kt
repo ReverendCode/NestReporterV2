@@ -8,17 +8,17 @@ import java.sql.Date
 
 @Entity(tableName = "reports")
 data class Report(
-        @PrimaryKey
+        @PrimaryKey(autoGenerate = true)
         @NonNull
         @ColumnInfo(name = "report_id")
         val reportId: Int,
         //begin INFO Section
         @ColumnInfo(name = "nest_number")
-        val nestNumber: Int,
+        var nestNumber: Int?,
+        @ColumnInfo(name = "false_crawl_number")
+        var falseCrawlNumber: Int?,
         @ColumnInfo(name = "nest_type")
         val nestType: NestType,
-        @ColumnInfo(name = "date_crawl_found")
-        val dateCrawlFound: Date,
         val observers: String,
         @ColumnInfo(name = "abandoned_body_pits")
         val abandonedBodyPits: Boolean,
@@ -28,11 +28,14 @@ data class Report(
         val noDigging: Boolean,
         val species: Species,
         @ColumnInfo(name = "species_other")
-        val speciesOther: String
+        val speciesOther: String,
+        @ColumnInfo(name = "nest_relocated")
+        val nestRelocated: Boolean
 )
+
 enum class Species {
-    Green,Loggerhead,Other
+    Green,Loggerhead,Other, None
 }
 enum class NestType {
-    Verified,Unverified,FalseCrawl,PossibleFalseCrawl
+    Verified,Unverified,FalseCrawl,PossibleFalseCrawl,None
 }
