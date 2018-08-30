@@ -1,5 +1,6 @@
 package com.vaporware.nestreporterv2
 
+import android.app.DatePickerDialog
 import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
@@ -7,7 +8,6 @@ import android.content.Context
 import android.support.design.widget.TabLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
-
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
@@ -19,10 +19,11 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-
+import android.widget.DatePicker
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_info.*
 import kotlinx.coroutines.experimental.launch
+import java.text.SimpleDateFormat
 
 
 lateinit var viewModel: ReportViewModel
@@ -40,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this).get(ReportViewModel::class.java)
         reports = viewModel.getAllReports()
+        viewModel.getCurrentReport()
         val prefs = getPreferences(Context.MODE_PRIVATE)
         highestReport = prefs.getInt("highestReport", 0)
         highestFalseCrawl = prefs.getInt("highestFalseCrawl", 0)
@@ -58,9 +60,7 @@ class MainActivity : AppCompatActivity() {
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show()
         }
-        if (reports.value == null || reports.value?.size == 0 ){
-            viewModel.newReport()
-        }
+
     }
 
     override fun onPause() {
@@ -92,11 +92,13 @@ class MainActivity : AppCompatActivity() {
 
     fun onClickSetDate(view: View) {
         val button = view as Button
-        TODO("Load a datePicker here")
+        val picks = DatePickerFragment()
+        picks.show(fragmentManager,button.hint as String)
     }
 
+//      Todo: There ought to be a better way.
     fun onSetCheckBox(view: View) {
-        var updatedReport = updateReportFromUi()
+        var updatedReport = updateReportFromUi(this)
         val box = view as SCheckBox
         if (box.isChecked) {
             when (view) {
@@ -122,26 +124,9 @@ class MainActivity : AppCompatActivity() {
                 bool_false_crawl, bool_nest_verified -> updatedReport = updatedReport.copy(nestType = NestType.None)
             }
         }
-
-
         update(updatedReport)
     }
 
-    private fun updateReportFromUi(): Report {
-        return reports.value?.get(currentReportIndex)?.copy(
-                abandonedEggCavities = bool_abandoned_egg_cavities.isChecked,
-                abandonedBodyPits = bool_abandoned_body_pits.isChecked,
-                noDigging = bool_no_digging.isChecked,
-                nestType = when {
-                    bool_possible_false_crawl.isChecked -> NestType.PossibleFalseCrawl
-                    bool_nest_verified.isChecked -> NestType.Verified
-                    bool_nest_not_verified.isChecked -> NestType.Unverified
-                    bool_false_crawl.isChecked -> NestType.FalseCrawl
-                    else -> NestType.None
-                },
-                nestRelocated = bool_nest_relocated.isChecked
-        )!!
-    }
     private fun update(report: Report) {
         launch {
             viewModel.updateReport(report)
@@ -171,14 +156,21 @@ class MainActivity : AppCompatActivity() {
 
         override fun onActivityCreated(savedInstanceState: Bundle?) {
             super.onActivityCreated(savedInstanceState)
-            reports = viewModel.getAllReports()
-            reports.observe(this, Observer {
-                Log.d("observer","$it")
-                if (it?.isNotEmpty() == true) setupInfoUI(it[currentReportIndex])
+
+            viewModel.getCurrentReport().observe(this, Observer {
+                Log.d("observingReport",it.toString())
+                if (it != null) setupInfoUI(it)
             })
+
+//            reports.observe(this, Observer {
+//                Log.d("observer","$it")
+//                    setupInfoUI(it!![currentReportIndex])
+//            })
+
+            edit_observers.addTextChangedListener(EditWatcher(Field.OBSERVERS))
         }
 
-        fun setupInfoUI(report: Report) {
+        private fun setupInfoUI(report: Report) {
             bool_abandoned_body_pits.isChecked = report.abandonedBodyPits
             bool_abandoned_egg_cavities.isChecked = report.abandonedEggCavities
             bool_no_digging.isChecked = report.noDigging
@@ -201,8 +193,10 @@ class MainActivity : AppCompatActivity() {
                     bool_possible_false_crawl.isChecked = false
                 }
             }
+            text_incubation_date.text = SimpleDateFormat("dd/MM/yyyy").format(add55Days(report.dateCrawlFound))
             bool_nest_relocated.isChecked = report.nestRelocated
         }
+
         companion object {
             fun newFragment(fragmentId: Int): InfoFragment {
                 val fragment = InfoFragment()
@@ -214,3 +208,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+

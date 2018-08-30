@@ -4,6 +4,8 @@ import android.arch.persistence.room.TypeConverter
 import java.util.*
 
 
+
+
 class Converters {
     @TypeConverter
     fun fromNestType(type: NestType?): String? {
@@ -46,11 +48,12 @@ class Converters {
         }
     }
     @TypeConverter
-    fun fromDate(date:Date): Long {
-        return date.time
+    fun fromTimestamp(value: Long?): Date? {
+        return if (value == null) null else Date(value)
     }
+
     @TypeConverter
-    fun toDate(millis: Long): Date {
-        return Date(millis)
+    fun dateToTimestamp(date: Date?): Long? {
+        return date?.time
     }
 }

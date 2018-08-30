@@ -30,7 +30,20 @@ data class Report(
         @ColumnInfo(name = "species_other")
         val speciesOther: String,
         @ColumnInfo(name = "nest_relocated")
-        val nestRelocated: Boolean
+        val nestRelocated: Boolean,
+        @ColumnInfo(name = "date_crawl_found")
+        val dateCrawlFound: java.util.Date
+)
+
+@Entity(tableName = "value_file")
+data class Values(
+        @PrimaryKey
+        val uid: Int,
+        val current: Int,
+        @ColumnInfo(name = "highest_nest")
+        val highestNest: Int,
+        @ColumnInfo(name = "highest_false_crawl")
+        val highestFalseCrawl: Int
 )
 
 enum class Species {

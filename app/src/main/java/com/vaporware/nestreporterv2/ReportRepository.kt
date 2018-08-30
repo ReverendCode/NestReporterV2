@@ -3,6 +3,7 @@ package com.vaporware.nestreporterv2
 import android.arch.lifecycle.LiveData
 import android.arch.persistence.room.RoomDatabase
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.experimental.launch
 
 class ReportRepository(context: Context) {
@@ -15,11 +16,30 @@ class ReportRepository(context: Context) {
         return db.reportDao.getReports()
     }
     fun updateReport(report: Report) {
-        db.reportDao.update(report)
+        launch{
+            db.reportDao.update(report)
+        }
     }
     fun addReport(report: Report) {
         launch {
             db.reportDao.create(report)
+        }
+    }
+    fun getValues(): Values {
+
+        return db.valuesDao.getValues()
+    }
+
+    fun addValues(values: Values) {
+        launch {
+            db.valuesDao.create(values)
+        }
+
+    }
+    fun updateValues(values: Values) {
+        launch{
+            db.valuesDao.update(values)
+            Log.d("viewModel","values: ${values}")
         }
     }
 }

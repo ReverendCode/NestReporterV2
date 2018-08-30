@@ -5,42 +5,49 @@ import android.arch.lifecycle.AndroidViewModel
 import android.arch.lifecycle.LiveData
 import android.util.Log
 import kotlinx.coroutines.experimental.launch
+import java.util.*
 
 class ReportViewModel(application: Application): AndroidViewModel(application) {
     private var currentReport: LiveData<Report>? = null
     private var reportRepository = ReportRepository(application)
+    private var values: Values? = null
 
-    fun getCurrentReport(id: Int): LiveData<Report> {
+    fun getCurrentReport():LiveData<Report> {
         if (currentReport == null) {
-            reportRepository.getReport(id)
+            currentReport = reportRepository.getReport(1)
         }
         return currentReport!!
     }
+
+    fun changeCurrentReport(reportId: Int) {
+        if (currentReport != null) {
+            reportRepository.updateValues(values!!.copy(current = reportId))
+            currentReport = reportRepository.getReport(reportId)
+        }
+    }
+
     fun getAllReports(): LiveData<List<Report>> {
-        Log.d("Report","getting all reports")
         return reportRepository.getAllReports()
     }
+
     fun updateReport(updatedReport: Report) {
         reportRepository.updateReport(updatedReport)
     }
+
     fun addReport(report: Report) {
         reportRepository.addReport(report)
     }
-    fun newReport(){
-        Log.d("newReport","attempting to create Report")
-        launch {
-            reportRepository.addReport(Report(0,
-                    null,
-                    null,
-                    NestType.None,
-                    "",
-                    false,
-                    false,
-                    false,
-                    Species.None,
-                    "",
-                    false))
-        }
 
+
+    fun getValues(): Values {
+        if (values == null) {
+            values = reportRepository.getValues()
+        }
+        Log.d("viewModel", "returning: ${values}")
+        return values!!
+    }
+
+    fun addValues(values: Values) {
+        reportRepository.addValues(values)
     }
 }
