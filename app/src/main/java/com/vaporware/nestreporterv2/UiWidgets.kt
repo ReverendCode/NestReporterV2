@@ -3,6 +3,7 @@ package com.vaporware.nestreporterv2
 import android.content.Context
 import android.content.res.TypedArray
 import android.util.AttributeSet
+import android.view.MenuItem
 import android.widget.CheckBox
 import android.widget.RadioGroup
 
@@ -19,5 +20,6 @@ class SCheckBox(context: Context, attributeSet: AttributeSet): CheckBox(context,
         array.recycle()
     }
 }
+
 
 class SRadioGroup(context: Context, attributeSet: AttributeSet): RadioGroup(context, attributeSet)

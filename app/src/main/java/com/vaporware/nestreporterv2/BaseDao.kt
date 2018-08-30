@@ -7,7 +7,7 @@ import android.arch.persistence.room.Update
 
 interface BaseDao<T> {
     @Insert
-    fun create(entity: T)
+    fun create(entity: T): Long
     @Update
     fun update(entity: T)
     @Delete

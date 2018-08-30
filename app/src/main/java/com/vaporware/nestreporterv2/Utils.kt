@@ -7,7 +7,9 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
+import android.view.View
 import android.widget.DatePicker
+import android.widget.Toast
 import kotlinx.android.synthetic.main.fragment_info.*
 import java.util.*
 

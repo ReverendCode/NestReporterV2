@@ -13,6 +13,10 @@ interface ReportDao : BaseDao<Report> {
     fun reportCount(): Int
     @Query("SELECT * FROM reports")
     fun getReports(): LiveData<List<Report>>
+    @Query("SELECT * FROM reports WHERE report_id = :id")
+    fun getById(id: Int): Report
+    @Query("SELECT MAX(report_id) FROM reports")
+    fun getHighestId(): Long
 }
 @Dao
 interface ValuesDao: BaseDao<Values> {

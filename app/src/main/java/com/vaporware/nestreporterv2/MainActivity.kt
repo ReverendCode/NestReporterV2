@@ -3,7 +3,6 @@ package com.vaporware.nestreporterv2
 import android.annotation.SuppressLint
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
-import android.content.Context
 import android.support.design.widget.TabLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
@@ -11,6 +10,7 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
 import android.os.Bundle
+import android.support.design.widget.CoordinatorLayout
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
@@ -19,6 +19,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.RadioButton
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_info.*
 import kotlinx.coroutines.experimental.launch
@@ -26,6 +27,7 @@ import java.text.SimpleDateFormat
 
 lateinit var viewModel: ReportViewModel
 var aReport: Report? = null
+
 class MainActivity : AppCompatActivity() {
     //keep your list of fragments to be generated here.
     val fragmentList = listOf(R.layout.fragment_info)
@@ -35,7 +37,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this).get(ReportViewModel::class.java)
-//        viewModel.getCurrentReport()
         setSupportActionBar(toolbar)
         // Create the adapter that will return a fragment for each of the
         // primary sections of the activity.
@@ -45,9 +46,26 @@ class MainActivity : AppCompatActivity() {
         container.addOnPageChangeListener(TabLayout.TabLayoutOnPageChangeListener(tabs))
         tabs.addOnTabSelectedListener(TabLayout.ViewPagerOnTabSelectedListener(container))
 
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+        viewModel.getReportNameList().observe(this, Observer {
+
+           val menu = nav_view.menu
+            menu.clear()
+            for (item in it!!) {
+                menu.add(item.first).setOnMenuItemClickListener {foo ->
+                    Log.d("menuClick","in callback for menu click item: $foo, reportID: ${item.second}")
+                    viewModel.updateCurrentReport(item.second)
+                    nav_drawer.closeDrawers()
+                    true
+                }
+            }
+
+        })
+
+        fab.setOnClickListener {
+            Toast.makeText(applicationContext,"Creating new Report",Toast.LENGTH_LONG).show()
+            launch{
+                viewModel.createNewReport()
+            }
         }
 
     }
@@ -99,6 +117,21 @@ class MainActivity : AppCompatActivity() {
         bool_no_digging -> updatedReport = updatedReport.copy(noDigging = bool_no_digging.isChecked)
     }
         update(updateNestType(view, updatedReport))
+    }
+
+
+    fun handleMenuClick(menuItem: MenuItem) {
+        /*
+        * check current nest and false crawl numbers, decrement values that match current highest
+        * (this is an attempt to keep phantom records to a minimum)
+        * finally, delete current record
+        * */
+
+        Log.d("handleDelete", aReport.toString())
+        launch{
+            viewModel.deleteReport(aReport!!)
+
+        }
     }
 
     private fun updateNestType(view: View, report: Report): Report {
@@ -166,14 +199,17 @@ class MainActivity : AppCompatActivity() {
         override fun onActivityCreated(savedInstanceState: Bundle?) {
             super.onActivityCreated(savedInstanceState)
 
-            viewModel.getLiveReport().observe(this, Observer {
-                Log.d("observingReport",it.toString())
-                if (it != null) setupInfoUI(it)
-                aReport = it
-            })
             viewModel.getValues().observe(this, Observer {
                 Log.d("observingValues", "values: $it")
-                viewModel.changeCurrentReport(it?.current?:1)
+                if (it != null) {
+                    viewModel.getLiveReport().removeObservers(this)
+                    viewModel.changeCurrentReport(it.current)
+                    viewModel.getLiveReport().observe(this, Observer {foo ->
+                        Log.d("observingReport",foo.toString())
+                        if (foo != null) setupInfoUI(foo)
+                        aReport = foo
+                    })
+                }
             })
 
             edit_observers.addTextChangedListener(EditWatcher(Field.OBSERVERS))

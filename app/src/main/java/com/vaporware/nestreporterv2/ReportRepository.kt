@@ -4,6 +4,8 @@ import android.arch.lifecycle.LiveData
 import android.arch.persistence.room.RoomDatabase
 import android.content.Context
 import android.util.Log
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.launch
 
 class ReportRepository(context: Context) {
@@ -20,10 +22,22 @@ class ReportRepository(context: Context) {
             db.reportDao.update(report)
         }
     }
-    fun addReport(report: Report) {
-        launch {
-            db.reportDao.create(report)
+
+    fun deleteReport(toDelete: Report) {
+        launch{
+            db.reportDao.delete(toDelete)
         }
+
+    }
+
+    fun getHighestId(): Deferred<Long> {
+        return async{
+            db.reportDao.getHighestId()
+        }
+    }
+    fun addReport(report: Report): Deferred<Long> {
+        return async {
+            db.reportDao.create(report)}
     }
     fun getValues(): LiveData<Values> {
 
@@ -39,7 +53,7 @@ class ReportRepository(context: Context) {
     fun updateValues(values: Values) {
         launch{
             db.valuesDao.update(values)
-            Log.d("viewModel","values: ${values}")
+            Log.d("updateValues","values: ${values}")
         }
     }
 }
