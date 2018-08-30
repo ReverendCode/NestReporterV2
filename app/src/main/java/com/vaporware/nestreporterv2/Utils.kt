@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.view.View
 import android.widget.DatePicker
 import kotlinx.android.synthetic.main.fragment_info.*
 import java.util.*
@@ -20,7 +19,7 @@ class DatePickerFragment : DialogFragment(), DatePickerDialog.OnDateSetListener 
         date.set(year,month,day)
         when (this.tag) {
             "crawl_found" -> {
-                viewModel.updateReport(viewModel.getCurrentReport().value!!
+                viewModel.updateReport(viewModel.getCurrentReport()
                         .copy(dateCrawlFound = date.time))
             }
             else -> {}
@@ -38,35 +37,20 @@ class DatePickerFragment : DialogFragment(), DatePickerDialog.OnDateSetListener 
                 this, year, month, day)
     }
 }
-class EditWatcher(val tag: Field): TextWatcher {
+class EditWatcher(private val tag: Field): TextWatcher {
     override fun afterTextChanged(change: Editable?) {
-        when (tag) {
-            Field.OBSERVERS -> viewModel.updateReport(reports.value?.get(currentReportIndex)!!.copy(
-                    observers = change.toString()
-            ))
+        var updatedReport = viewModel.getCurrentReport()
+        updatedReport = when (tag) {
+            Field.OBSERVERS -> updatedReport.copy(observers = change.toString())
+            Field.OTHER_SPECIES -> updatedReport.copy(speciesOther = change.toString())
         }
+        viewModel.updateReport(updatedReport)
     }
     override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
     }
     override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
     }
 
-}
-
-fun updateReportFromUi(view: MainActivity): Report {
-    return viewModel.getCurrentReport().value?.copy(
-            abandonedEggCavities = view.bool_abandoned_egg_cavities.isChecked,
-            abandonedBodyPits = view.bool_abandoned_body_pits.isChecked,
-            noDigging = view.bool_no_digging.isChecked,
-            nestType = when {
-                view. bool_possible_false_crawl.isChecked -> NestType.PossibleFalseCrawl
-                view. bool_nest_verified.isChecked -> NestType.Verified
-                view.bool_nest_not_verified.isChecked -> NestType.Unverified
-                view.bool_false_crawl.isChecked -> NestType.FalseCrawl
-                else -> NestType.None
-            },
-            nestRelocated = view.bool_nest_relocated.isChecked
-    )!!
 }
 
 fun add55Days(date: Date): Date {
@@ -76,5 +60,5 @@ fun add55Days(date: Date): Date {
     return cal.time
 }
 enum class Field {
-    OBSERVERS
+    OBSERVERS, OTHER_SPECIES
 }

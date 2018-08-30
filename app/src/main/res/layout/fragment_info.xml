@@ -29,13 +29,13 @@
                 android:layout_weight="1"
                 android:text="Section Number" />
 
-            <EditText
+            <TextView
                 android:id="@+id/edit_section_number"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
                 android:ems="3"
-                android:inputType="number" />
+                 />
         </TableRow>
 
         <TableRow
@@ -57,13 +57,13 @@
                 android:layout_weight="1"
                 android:text="Nest Number" />
 
-            <EditText
+            <TextView
                 android:id="@+id/edit_nest_number"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
                 android:ems="3"
-                android:inputType="number" />
+                 />
         </TableRow>
 
         <TableRow
@@ -85,13 +85,14 @@
                 android:layout_weight="1"
                 android:text="False Crawl Number" />
 
-            <EditText
+            <TextView
                 android:id="@+id/edit_false_crawl_number"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
                 android:ems="3"
-                android:inputType="number" />
+
+                 />
         </TableRow>
 
         <TableRow
@@ -111,12 +112,12 @@
                 android:layout_weight="1"
                 android:text="Possible False Crawl Number" />
 
-            <EditText
+            <TextView
                 android:id="@+id/edit_possible_false_crawl_number"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ems="3"
-                android:inputType="number" />
+                 />
         </TableRow>
 
         <TableRow
@@ -398,21 +399,24 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Loggerhead" />
+                    android:text="Loggerhead"
+                    android:onClick="onClickRadio"/>
 
                 <RadioButton
                     android:id="@+id/radioButton3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Green" />
+                    android:text="Green"
+                    android:onClick="onClickRadio"/>
 
                 <RadioButton
                     android:id="@+id/radioButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Other" />
+                    android:text="Other"
+                    android:onClick="onClickRadio"/>
             </RadioGroup>
 
             <EditText

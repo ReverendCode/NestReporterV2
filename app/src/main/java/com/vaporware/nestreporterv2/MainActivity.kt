@@ -1,7 +1,6 @@
 package com.vaporware.nestreporterv2
 
-import android.app.DatePickerDialog
-import android.arch.lifecycle.LiveData
+import android.annotation.SuppressLint
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.content.Context
@@ -19,18 +18,14 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.DatePicker
+import android.widget.RadioButton
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_info.*
 import kotlinx.coroutines.experimental.launch
 import java.text.SimpleDateFormat
 
-
 lateinit var viewModel: ReportViewModel
-var currentReportIndex: Int = 0
-lateinit var reports: LiveData<List<Report>>
-var highestReport = 0
-var highestFalseCrawl = 0
+var aReport: Report? = null
 class MainActivity : AppCompatActivity() {
     //keep your list of fragments to be generated here.
     val fragmentList = listOf(R.layout.fragment_info)
@@ -40,13 +35,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this).get(ReportViewModel::class.java)
-        reports = viewModel.getAllReports()
-        viewModel.getCurrentReport()
-        val prefs = getPreferences(Context.MODE_PRIVATE)
-        highestReport = prefs.getInt("highestReport", 0)
-        highestFalseCrawl = prefs.getInt("highestFalseCrawl", 0)
-        currentReportIndex = prefs.getInt("currentReportIndex",0)
-
+//        viewModel.getCurrentReport()
         setSupportActionBar(toolbar)
         // Create the adapter that will return a fragment for each of the
         // primary sections of the activity.
@@ -62,14 +51,6 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
-
-    override fun onPause() {
-        super.onPause()
-        val prefs = getPreferences(Context.MODE_PRIVATE)?: return
-        prefs.edit().putInt("currentReportIndex", currentReportIndex).apply()
-        prefs.edit().putInt("highestReport", highestReport).apply()
-    }
-
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -96,25 +77,54 @@ class MainActivity : AppCompatActivity() {
         picks.show(fragmentManager,button.hint as String)
     }
 
+    fun onClickRadio(view: View) {
+        val rad = view as RadioButton
+        var updatedReport = aReport!!
+        when (rad.text) {
+            "Green" -> updatedReport = updatedReport.copy(species = Species.Green)
+            "Loggerhead" -> updatedReport = updatedReport.copy(species = Species.Loggerhead)
+            "Other" -> {
+                updatedReport = updatedReport.copy(species = Species.Other)
+            }
+        }
+        update(updatedReport)
+    }
 //      Todo: There ought to be a better way.
     fun onSetCheckBox(view: View) {
-        var updatedReport = updateReportFromUi(this)
+//        var updatedReport = updateReportFromUi(this)
+    var updatedReport = aReport!!
+    when (view) {
+        bool_abandoned_body_pits -> updatedReport = updatedReport.copy(abandonedBodyPits = bool_abandoned_body_pits.isChecked)
+        bool_abandoned_egg_cavities -> updatedReport = updatedReport.copy(abandonedEggCavities = bool_abandoned_egg_cavities.isChecked)
+        bool_no_digging -> updatedReport = updatedReport.copy(noDigging = bool_no_digging.isChecked)
+    }
+        update(updateNestType(view, updatedReport))
+    }
+
+    private fun updateNestType(view: View, report: Report): Report {
+        var updatedReport = report
         val box = view as SCheckBox
-        if (box.isChecked) {
+        if (box.isChecked) {//isTrue
             when (view) {
-                bool_nest_relocated, bool_nest_verified -> {
+                bool_nest_verified -> {
                     updatedReport = updatedReport.copy(nestType = NestType.Verified)
                     if (updatedReport.nestNumber == null) {
-                        updatedReport = updatedReport.copy(nestNumber = ++highestReport)
-                        getPreferences(Context.MODE_PRIVATE).edit().putInt("highestReport", highestReport).apply()
+                        updatedReport = updatedReport.copy(nestNumber = viewModel.incrementNest())
                     }
-
+                }
+                bool_nest_relocated -> {
+                    updatedReport = updatedReport.copy(nestType = NestType.Verified, nestRelocated = true)
                 }
                 bool_false_crawl -> {
                     updatedReport = updatedReport.copy(nestType = NestType.FalseCrawl)
                     if (updatedReport.falseCrawlNumber == null) {
-                        updatedReport = updatedReport.copy(falseCrawlNumber = ++highestFalseCrawl)
-                        getPreferences(Context.MODE_PRIVATE).edit().putInt("highestFalseCrawl", highestFalseCrawl).apply()
+                        updatedReport = updatedReport.copy(falseCrawlNumber = viewModel.incrementFalseCrawl())
+                    }
+                }
+                bool_possible_false_crawl -> {
+                    updatedReport = updatedReport.copy(nestType = NestType.PossibleFalseCrawl)
+                    if (updatedReport.falseCrawlNumber == null) {
+                        updatedReport = updatedReport.copy(falseCrawlNumber = viewModel.incrementFalseCrawl())
                     }
                 }
                 bool_nest_not_verified -> updatedReport = updatedReport.copy(nestType = NestType.Unverified)
@@ -124,9 +134,8 @@ class MainActivity : AppCompatActivity() {
                 bool_false_crawl, bool_nest_verified -> updatedReport = updatedReport.copy(nestType = NestType.None)
             }
         }
-        update(updatedReport)
+        return updatedReport
     }
-
     private fun update(report: Report) {
         launch {
             viewModel.updateReport(report)
@@ -157,19 +166,21 @@ class MainActivity : AppCompatActivity() {
         override fun onActivityCreated(savedInstanceState: Bundle?) {
             super.onActivityCreated(savedInstanceState)
 
-            viewModel.getCurrentReport().observe(this, Observer {
+            viewModel.getLiveReport().observe(this, Observer {
                 Log.d("observingReport",it.toString())
                 if (it != null) setupInfoUI(it)
+                aReport = it
+            })
+            viewModel.getValues().observe(this, Observer {
+                Log.d("observingValues", "values: $it")
+                viewModel.changeCurrentReport(it?.current?:1)
             })
 
-//            reports.observe(this, Observer {
-//                Log.d("observer","$it")
-//                    setupInfoUI(it!![currentReportIndex])
-//            })
-
             edit_observers.addTextChangedListener(EditWatcher(Field.OBSERVERS))
+            edit_other_species.addTextChangedListener(EditWatcher(Field.OTHER_SPECIES))
         }
 
+        @SuppressLint("SimpleDateFormat")
         private fun setupInfoUI(report: Report) {
             bool_abandoned_body_pits.isChecked = report.abandonedBodyPits
             bool_abandoned_egg_cavities.isChecked = report.abandonedEggCavities
@@ -178,13 +189,29 @@ class MainActivity : AppCompatActivity() {
             bool_nest_not_verified.isChecked = false
             bool_false_crawl.isChecked = false
             bool_possible_false_crawl.isChecked = false
+            edit_nest_number.text = ""
+            edit_false_crawl_number.text = ""
+            edit_possible_false_crawl_number.text = ""
             when (report.nestType) {
-                NestType.Verified -> bool_nest_verified.isChecked = true
-                NestType.Unverified -> bool_nest_not_verified.isChecked = true
-                NestType.FalseCrawl -> bool_false_crawl.isChecked = true
+                NestType.Verified -> {
+                    bool_nest_verified.isChecked = true
+                    edit_nest_number.text = report.nestNumber.toString()
+                }
+
+                NestType.Unverified -> {
+                    bool_nest_not_verified.isChecked = true
+                    edit_nest_number.text = report.nestNumber.toString()
+                }
+
+                NestType.FalseCrawl -> {
+                    bool_false_crawl.isChecked = true
+
+                    edit_false_crawl_number.text = report.falseCrawlNumber.toString()
+                }
                 NestType.PossibleFalseCrawl -> {
                     bool_possible_false_crawl.isChecked = true
                     bool_false_crawl.isChecked = true
+                    edit_possible_false_crawl_number.text = report.falseCrawlNumber.toString()
                 }
                 NestType.None -> {
                     bool_nest_verified.isChecked = false
@@ -195,6 +222,7 @@ class MainActivity : AppCompatActivity() {
             }
             text_incubation_date.text = SimpleDateFormat("dd/MM/yyyy").format(add55Days(report.dateCrawlFound))
             bool_nest_relocated.isChecked = report.nestRelocated
+            edit_other_species.isEnabled = report.species == Species.Other
         }
 
         companion object {

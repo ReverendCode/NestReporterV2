@@ -30,9 +30,9 @@ abstract class ReportDatabase: RoomDatabase() {
                                     launch {
                                         getInstance(context).reportDao.create(Report(
                                                 0,
+                                                666,
                                                 null,
-                                                null,
-                                                NestType.None,
+                                                NestType.Verified,
                                                 "",
                                                 false,
                                                 false,
@@ -43,7 +43,7 @@ abstract class ReportDatabase: RoomDatabase() {
                                                 Date(0)
                                         ))
                                         getInstance(context).valuesDao.create(Values(
-                                                0,1,1,0
+                                                0,1,1,1
                                         ))
                                     }
                                 }

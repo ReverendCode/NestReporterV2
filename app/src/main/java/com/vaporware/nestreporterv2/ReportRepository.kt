@@ -25,9 +25,9 @@ class ReportRepository(context: Context) {
             db.reportDao.create(report)
         }
     }
-    fun getValues(): Values {
+    fun getValues(): LiveData<Values> {
 
-        return db.valuesDao.getValues()
+        return db.valuesDao.getValues(0)
     }
 
     fun addValues(values: Values) {

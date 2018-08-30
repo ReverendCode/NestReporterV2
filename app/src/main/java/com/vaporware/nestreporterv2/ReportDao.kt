@@ -16,6 +16,6 @@ interface ReportDao : BaseDao<Report> {
 }
 @Dao
 interface ValuesDao: BaseDao<Values> {
-    @Query("SELECT * FROM value_file WHERE uid = 1")
-    fun getValues(): Values
+    @Query("SELECT * FROM value_file WHERE uid = :id")
+    fun getValues(id: Int): LiveData<Values>
 }

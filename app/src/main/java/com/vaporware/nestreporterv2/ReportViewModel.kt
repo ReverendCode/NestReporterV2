@@ -10,20 +10,26 @@ import java.util.*
 class ReportViewModel(application: Application): AndroidViewModel(application) {
     private var currentReport: LiveData<Report>? = null
     private var reportRepository = ReportRepository(application)
-    private var values: Values? = null
+    private var values: LiveData<Values>? = null
 
-    fun getCurrentReport():LiveData<Report> {
+
+    fun getLiveReport(): LiveData<Report> {
         if (currentReport == null) {
             currentReport = reportRepository.getReport(1)
         }
         return currentReport!!
     }
 
-    fun changeCurrentReport(reportId: Int) {
-        if (currentReport != null) {
-            reportRepository.updateValues(values!!.copy(current = reportId))
-            currentReport = reportRepository.getReport(reportId)
+    fun getCurrentReport():Report {
+        if (currentReport == null) {
+            currentReport = reportRepository.getReport(1)
         }
+        return currentReport?.value!!
+    }
+
+    fun changeCurrentReport(reportId: Int) {
+            currentReport = reportRepository.getReport(reportId)
+
     }
 
     fun getAllReports(): LiveData<List<Report>> {
@@ -38,16 +44,27 @@ class ReportViewModel(application: Application): AndroidViewModel(application) {
         reportRepository.addReport(report)
     }
 
-
-    fun getValues(): Values {
+    fun getValues(): LiveData<Values> {
         if (values == null) {
             values = reportRepository.getValues()
         }
-        Log.d("viewModel", "returning: ${values}")
         return values!!
     }
 
     fun addValues(values: Values) {
         reportRepository.addValues(values)
+    }
+    fun incrementNest(): Int {
+        Log.d("incrementNest", "values: $values, Value: ${values?.value}")
+//        val updatedValues = values.value!!.copy(highestNest = values.value!!.highestNest+1)
+//        reportRepository.updateValues(updatedValues)
+//        return updatedValues.highestNest
+        return 1
+    }
+    fun incrementFalseCrawl(): Int {
+
+        reportRepository.updateValues(values?.value!!.copy(highestFalseCrawl = values?.value!!.highestFalseCrawl+1))
+        return values?.value!!.highestFalseCrawl
+
     }
 }
