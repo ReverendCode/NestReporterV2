@@ -3,14 +3,13 @@ package com.vaporware.nestreporterv2
 import android.annotation.SuppressLint
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
+import android.content.Intent
 import android.support.design.widget.TabLayout
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
 import android.os.Bundle
-import android.support.design.widget.CoordinatorLayout
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
@@ -20,56 +19,101 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.RadioButton
 import android.widget.Toast
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.Task
+import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_info.*
 import kotlinx.coroutines.experimental.launch
 import java.text.SimpleDateFormat
 
 lateinit var viewModel: ReportViewModel
-var aReport: Report? = null
+//var aReport: Report? = null
 
 class MainActivity : AppCompatActivity() {
     //keep your list of fragments to be generated here.
     val fragmentList = listOf(R.layout.fragment_info)
     private var mSectionsPagerAdapter: SectionsPagerAdapter? = null
+    private val debugOauthClientId = "625582312057-mft8ce438s5dt5rfujufd7dlsavt5bk9.apps.googleusercontent.com"
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        viewModel = ViewModelProviders.of(this).get(ReportViewModel::class.java)
-        setSupportActionBar(toolbar)
-        // Create the adapter that will return a fragment for each of the
-        // primary sections of the activity.
-        mSectionsPagerAdapter = SectionsPagerAdapter(supportFragmentManager)
-        // Set up the ViewPager with the sections adapter.
-        container.adapter = mSectionsPagerAdapter
-        container.addOnPageChangeListener(TabLayout.TabLayoutOnPageChangeListener(tabs))
-        tabs.addOnTabSelectedListener(TabLayout.ViewPagerOnTabSelectedListener(container))
 
-        viewModel.getReportNameList().observe(this, Observer {
-
-           val menu = nav_view.menu
-            menu.clear()
-            for (item in it!!) {
-                menu.add(item.first).setOnMenuItemClickListener {foo ->
-                    Log.d("menuClick","in callback for menu click item: $foo, reportID: ${item.second}")
-                    viewModel.updateCurrentReport(item.second)
-                    nav_drawer.closeDrawers()
-                    true
-                }
-            }
-
-        })
-
-        fab.setOnClickListener {
-            Toast.makeText(applicationContext,"Creating new Report",Toast.LENGTH_LONG).show()
-            launch{
-                viewModel.createNewReport()
-            }
-        }
+        val account = GoogleSignIn.getLastSignedInAccount(this)
+        openReporter(account)
 
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 9999) {
+            Log.d("activityResult","code 9999 caught")
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            handleSignIn(task)
+
+        }
+    }
+
+    private fun handleSignIn(task: Task<GoogleSignInAccount>) {
+        try {
+            val account = task.getResult(ApiException::class.java)
+            openReporter(account)
+        } catch (ex: ApiException) {
+            Log.e("handleSignIn", ex.statusCode.toString())
+            openReporter(null)
+        }
+    }
+
+    private fun openReporter(account: GoogleSignInAccount?) {
+
+        if (account == null) {
+            setContentView(R.layout.activity_login)
+            sign_in_button.setOnClickListener {
+                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(debugOauthClientId)
+                        .requestEmail()
+                        .build()
+                val mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
+                val mSignInIntent = mGoogleSignInClient.signInIntent
+                startActivityForResult(mSignInIntent,9999)
+            }
+        } else {
+            setContentView(R.layout.activity_main)
+            viewModel = ViewModelProviders.of(this).get(ReportViewModel::class.java)
+            setSupportActionBar(toolbar)
+            // Create the adapter that will return a fragment for each of the
+            // primary sections of the activity.
+            mSectionsPagerAdapter = SectionsPagerAdapter(supportFragmentManager)
+            // Set up the ViewPager with the sections adapter.
+            container.adapter = mSectionsPagerAdapter
+            container.addOnPageChangeListener(TabLayout.TabLayoutOnPageChangeListener(tabs))
+            tabs.addOnTabSelectedListener(TabLayout.ViewPagerOnTabSelectedListener(container))
+
+            viewModel.getReportNameList().observe(this, Observer {
+                val menu = nav_view.menu
+                menu.clear()
+                for (item in it!!) {
+                    menu.add(item.first).setOnMenuItemClickListener { foo ->
+                        Log.d("menuClick", "in callback for menu click item: $foo, reportID: ${item.second}")
+                        viewModel.updateCurrentReport(item.second)
+                        nav_drawer.closeDrawers()
+                        true
+                    }
+                }
+            })
+            fab.setOnClickListener {
+                Toast.makeText(applicationContext, "Creating new Report", Toast.LENGTH_LONG).show()
+                launch {
+                    viewModel.createNewReport()
+                }
+            }
+
+        }
+    }
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -96,41 +140,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onClickRadio(view: View) {
-        val rad = view as RadioButton
-        var updatedReport = aReport!!
-        when (rad.text) {
-            "Green" -> updatedReport = updatedReport.copy(species = Species.Green)
-            "Loggerhead" -> updatedReport = updatedReport.copy(species = Species.Loggerhead)
-            "Other" -> {
-                updatedReport = updatedReport.copy(species = Species.Other)
+        launch {
+            val rad = view as RadioButton
+            var updatedReport = viewModel.getCurrentReport()//aReport!!
+            when (rad.text) {
+                "Green" -> updatedReport = updatedReport.copy(species = Species.Green)
+                "Loggerhead" -> updatedReport = updatedReport.copy(species = Species.Loggerhead)
+                "Other" -> {
+                    updatedReport = updatedReport.copy(species = Species.Other)
+                }
             }
+            update(updatedReport)
         }
-        update(updatedReport)
     }
 //      Todo: There ought to be a better way.
+
     fun onSetCheckBox(view: View) {
 //        var updatedReport = updateReportFromUi(this)
-    var updatedReport = aReport!!
-    when (view) {
-        bool_abandoned_body_pits -> updatedReport = updatedReport.copy(abandonedBodyPits = bool_abandoned_body_pits.isChecked)
-        bool_abandoned_egg_cavities -> updatedReport = updatedReport.copy(abandonedEggCavities = bool_abandoned_egg_cavities.isChecked)
-        bool_no_digging -> updatedReport = updatedReport.copy(noDigging = bool_no_digging.isChecked)
-    }
-        update(updateNestType(view, updatedReport))
+       launch {
+           var updatedReport = viewModel.getCurrentReport()//aReport
+           when (view) {
+               bool_abandoned_body_pits -> updatedReport = updatedReport.copy(abandonedBodyPits = bool_abandoned_body_pits.isChecked)
+               bool_abandoned_egg_cavities -> updatedReport = updatedReport.copy(abandonedEggCavities = bool_abandoned_egg_cavities.isChecked)
+               bool_no_digging -> updatedReport = updatedReport.copy(noDigging = bool_no_digging.isChecked)
+           }
+           update(updateNestType(view, updatedReport))
+       }
     }
 
 
     fun handleMenuClick(menuItem: MenuItem) {
-        /*
-        * check current nest and false crawl numbers, decrement values that match current highest
-        * (this is an attempt to keep phantom records to a minimum)
-        * finally, delete current record
-        * */
-
-        Log.d("handleDelete", aReport.toString())
-        launch{
-            viewModel.deleteReport(aReport!!)
-
+        launch {
+            viewModel.deleteReport(viewModel.getCurrentReport())
         }
     }
 
@@ -199,7 +240,7 @@ class MainActivity : AppCompatActivity() {
         override fun onActivityCreated(savedInstanceState: Bundle?) {
             super.onActivityCreated(savedInstanceState)
 
-            viewModel.getValues().observe(this, Observer {
+            viewModel.getLiveValues().observe(this, Observer {
                 Log.d("observingValues", "values: $it")
                 if (it != null) {
                     viewModel.getLiveReport().removeObservers(this)
@@ -207,7 +248,6 @@ class MainActivity : AppCompatActivity() {
                     viewModel.getLiveReport().observe(this, Observer {foo ->
                         Log.d("observingReport",foo.toString())
                         if (foo != null) setupInfoUI(foo)
-                        aReport = foo
                     })
                 }
             })

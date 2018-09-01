@@ -10,118 +10,80 @@ import java.util.*
 
 class ReportViewModel(application: Application): AndroidViewModel(application) {
     private var currentReport: LiveData<Report>? = null
-    private var reportRepository = ReportRepository(application)
-    private var values: LiveData<Values>? = null
-
+    private var fireRepository = FireStoreRepository()
 
     fun getLiveReport(): LiveData<Report> {
-        if (currentReport == null) {
-            currentReport = reportRepository.getReport(values?.value!!.current)
-        }
-        return currentReport!!
+        val reportId = getValues().current
+        return fireRepository.getReport(reportId)
     }
 
-    fun getCurrentReport():Report {
-        if (currentReport == null) {
-            currentReport = reportRepository.getReport(values?.value!!.current)
-        }
-        return currentReport?.value!!
+    suspend fun getCurrentReport(): Report {
+        val reportId = getValues().current
+        Log.d("getCurrent",reportId)
+        val reportData =  fireRepository.getStaticReport(reportId)
+//        val reportData = currentReport
+        Log.d("getCurrent", reportData.toString())
+        return reportData
     }
 
-    fun updateCurrentReport(reportId: Int) {
-        reportRepository.updateValues(values?.value!!.copy(current = reportId))
+    fun updateCurrentReport(reportId: String) {
+//        reportRepository.updateValues(values?.value!!.copy(current = reportId))
+        val updateMe = getValues().copy(current = reportId)
+        fireRepository.putState(updateMe)
     }
 
-    fun changeCurrentReport(reportId: Int) {
-        currentReport = reportRepository.getReport(reportId)
+    fun changeCurrentReport(reportId: String) {
+        Log.d("changeReportPre",currentReport?.value.toString())
+        currentReport = fireRepository.getReport(reportId)
+        val vals = getValues()
+        fireRepository.putState(vals.copy(current = reportId))
+        Log.d("changeReportPost",currentReport?.value.toString())
     }
 
     fun deleteReport(toDelete: Report) {
-        val currentNest = toDelete.nestNumber
-        val currentFC = toDelete.falseCrawlNumber
-        val highest = getHighestNestNumber()
-        var state = values!!.value!!
-
-        if (currentNest != null && currentNest == highest - 1){
-            state = state.copy(highestNest = highest-1)
-        }
-        if (currentFC != null && currentFC == getHighestFCNumber()-1) {
-            state = state.copy(highestFalseCrawl = getHighestFCNumber()-1)
-        }
-        reportRepository.deleteReport(toDelete)
-        launch{
-            reportRepository.updateValues(state)
-            updateToHighestReport()
-        }
-    }
-
-    private suspend fun updateToHighestReport() {
-        val newCurrent = reportRepository.getHighestId().await()
-        Log.d("updateToHighest","new Current: $newCurrent")
-        reportRepository.updateValues(values!!.value!!.copy(current = newCurrent.toInt()))
-        if (newCurrent < 1) {
-            createNewReport()
-            Log.d("updateToHighest","new Report Created")
-        }
-
+        fireRepository.deleteReport(toDelete)
     }
 
     fun updateReport(updatedReport: Report) {
-        reportRepository.updateReport(updatedReport)
+        fireRepository.updateReport(updatedReport)
     }
 
-    private fun getHighestNestNumber(): Int {
-        return values?.value!!.highestNest
-    }
-    private fun getHighestFCNumber(): Int {
-        return values?.value!!.highestFalseCrawl
+    fun createNewReport() {
+
+        fireRepository.updateReport(Report())
     }
 
-    suspend fun createNewReport() {
-        addReport(Report(
-                0,
-                null,
-                null,
-                NestType.None,
-                "",
-                false,
-                false,
-                false,
-                Species.None,
-                "",
-                false,
-                Date(0)
-        ))
+    private fun getValues(): Values {
+        return fireRepository.getState()
     }
 
-    private suspend fun addReport(report: Report) {
-        val id = reportRepository.addReport(report).await()
-        reportRepository.updateValues(values?.value!!.copy(current = id.toInt()))
-    }
-
-    fun getValues(): LiveData<Values> {
-        if (values == null) {
-            values = reportRepository.getValues()
-        }
-        return values!!
+    fun getLiveValues(): LiveData<Values> {
+        return fireRepository.getLiveState()
     }
 
     fun incrementNest(): Int {
-        val incremented = values?.value!!.highestNest
+        val incremented = getValues().highestNest
         Log.d("incrementNest", "Value: $incremented")
-        reportRepository.updateValues(values?.value!!.copy(highestNest = incremented + 1))
+        val updatedValues = getValues().copy(highestNest = incremented + 1)
+//        reportRepository.updateValues(values?.value!!.copy(highestNest = incremented + 1))
+        fireRepository.putState(updatedValues)
+
         return incremented
+
     }
 
     fun incrementFalseCrawl(): Int {
-        reportRepository.updateValues(values?.value!!.copy(highestFalseCrawl = values?.value!!.highestFalseCrawl+1))
-        return values?.value!!.highestFalseCrawl
+        val incremented = getValues().highestFalseCrawl
+        val updatedValues = getValues().copy(highestFalseCrawl = incremented+1)
+//        reportRepository.updateValues(values?.value!!.copy(highestFalseCrawl = values?.value!!.highestFalseCrawl+1))
+        fireRepository.putState(updatedValues)
+        return incremented
 
     }
 
-    fun getReportNameList(): LiveData<MutableList<Pair<String,Int>>> {
-        return Transformations.map(reportRepository.getAllReports()) {
-            val names = mutableListOf<Pair<String, Int>>()
+    fun getReportNameList(): LiveData<MutableList<Pair<String,String>>> {
+        return Transformations.map(fireRepository.getAllReports()) {
+            val names = mutableListOf<Pair<String, String>>()
             for (report in it) {
                 val name = when (report.nestType) {
                     NestType.FalseCrawl,NestType.PossibleFalseCrawl -> "False Crawl ${report.falseCrawlNumber?:"unset"}"

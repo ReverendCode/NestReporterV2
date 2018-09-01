@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.DatePicker
 import android.widget.Toast
 import kotlinx.android.synthetic.main.fragment_info.*
+import kotlinx.coroutines.experimental.launch
 import java.util.*
 
 
@@ -21,8 +22,10 @@ class DatePickerFragment : DialogFragment(), DatePickerDialog.OnDateSetListener 
         date.set(year,month,day)
         when (this.tag) {
             "crawl_found" -> {
-                viewModel.updateReport(viewModel.getCurrentReport()
+                launch{
+                    viewModel.updateReport(viewModel.getCurrentReport()
                         .copy(dateCrawlFound = date.time))
+                }
             }
             else -> {}
         }
@@ -40,13 +43,17 @@ class DatePickerFragment : DialogFragment(), DatePickerDialog.OnDateSetListener 
     }
 }
 class EditWatcher(private val tag: Field): TextWatcher {
+
     override fun afterTextChanged(change: Editable?) {
-        var updatedReport = viewModel.getCurrentReport()
-        updatedReport = when (tag) {
-            Field.OBSERVERS -> updatedReport.copy(observers = change.toString())
-            Field.OTHER_SPECIES -> updatedReport.copy(speciesOther = change.toString())
-        }
-        viewModel.updateReport(updatedReport)
+       launch {
+           var updatedReport = viewModel.getCurrentReport()
+           updatedReport = when (tag) {
+               Field.OBSERVERS -> updatedReport.copy(observers = change.toString())
+               Field.OTHER_SPECIES -> updatedReport.copy(speciesOther = change.toString())
+
+           }
+           viewModel.updateReport(updatedReport)
+       }
     }
     override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
     }

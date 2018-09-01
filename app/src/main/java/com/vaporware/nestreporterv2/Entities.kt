@@ -6,44 +6,27 @@ import android.arch.persistence.room.PrimaryKey
 import android.support.annotation.NonNull
 import java.sql.Date
 
-@Entity(tableName = "reports")
 data class Report(
-        @PrimaryKey(autoGenerate = true)
-        @NonNull
-        @ColumnInfo(name = "report_id")
-        val reportId: Int,
+        val reportId: String = "0",
         //begin INFO Section
-        @ColumnInfo(name = "nest_number")
-        var nestNumber: Int?,
-        @ColumnInfo(name = "false_crawl_number")
-        var falseCrawlNumber: Int?,
-        @ColumnInfo(name = "nest_type")
-        val nestType: NestType,
-        val observers: String,
-        @ColumnInfo(name = "abandoned_body_pits")
-        val abandonedBodyPits: Boolean,
-        @ColumnInfo(name = "abandoned_egg_cavities")
-        val abandonedEggCavities: Boolean,
-        @ColumnInfo(name = "no_digging")
-        val noDigging: Boolean,
-        val species: Species,
-        @ColumnInfo(name = "species_other")
-        val speciesOther: String,
-        @ColumnInfo(name = "nest_relocated")
-        val nestRelocated: Boolean,
-        @ColumnInfo(name = "date_crawl_found")
-        val dateCrawlFound: java.util.Date
+        var nestNumber: Int? = null,
+        var falseCrawlNumber: Int? = null,
+        val nestType: NestType = NestType.None,
+        val observers: String = "",
+        val abandonedBodyPits: Boolean = false,
+        val abandonedEggCavities: Boolean = false,
+        val noDigging: Boolean = false,
+        val species: Species = Species.None,
+        val speciesOther: String = "",
+        val nestRelocated: Boolean = false,
+        val dateCrawlFound: java.util.Date = java.util.Date(0)
 )
 
-@Entity(tableName = "value_file")
+
 data class Values(
-        @PrimaryKey
-        val uid: Int,
-        val current: Int,
-        @ColumnInfo(name = "highest_nest")
-        val highestNest: Int,
-        @ColumnInfo(name = "highest_false_crawl")
-        val highestFalseCrawl: Int
+        val current: String = "0",
+        val highestNest: Int = 1,
+        val highestFalseCrawl: Int = 1
 )
 
 enum class Species {
