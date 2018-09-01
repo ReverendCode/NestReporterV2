@@ -6,29 +6,34 @@ import android.arch.persistence.room.PrimaryKey
 import android.support.annotation.NonNull
 import java.sql.Date
 
-data class Report(
-        val reportId: String = "0",
+data class Info(
+        var reportId: String = "0",
         //begin INFO Section
         var nestNumber: Int? = null,
         var falseCrawlNumber: Int? = null,
-        val nestType: NestType = NestType.None,
-        val observers: String = "",
-        val abandonedBodyPits: Boolean = false,
-        val abandonedEggCavities: Boolean = false,
-        val noDigging: Boolean = false,
-        val species: Species = Species.None,
-        val speciesOther: String = "",
-        val nestRelocated: Boolean = false,
-        val dateCrawlFound: java.util.Date = java.util.Date(0)
+        var falseCrawl: Boolean = false,
+        var verified: Boolean = false,
+        var notVerified: Boolean = false,
+        var possibleFalseCrawl: Boolean = false,
+        var observers: String = "",
+        var abandonedBodyPits: Boolean = false,
+        var abandonedEggCavities: Boolean = false,
+        var noDigging: Boolean = false,
+        var species: Species = Species.None,
+        var speciesOther: String = "",
+        var nestRelocated: Boolean = false,
+        var dateCrawlFound: java.util.Date = java.util.Date(0)
 )
 
-
-data class Values(
-        val current: String = "0",
-        val highestNest: Int = 1,
-        val highestFalseCrawl: Int = 1
+data class Report(
+        var infoTab: Info = Info()
 )
 
+data class NestAppState(
+        var currentId: String? = null,
+        var highestFalseCrawl: Int = 1,
+        var highestNest: Int = 1
+)
 enum class Species {
     Green,Loggerhead,Other, None
 }

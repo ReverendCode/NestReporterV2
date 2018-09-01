@@ -139,7 +139,7 @@
                 android:text="Date Crawl Found" />
 
             <Button
-                android:id="@+id/button"
+                android:id="@+id/button_crawl_found_date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:elevation="0dp"
@@ -197,6 +197,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ems="10"
+                android:tag = "observers"
                 android:inputType="textPersonName" />
         </TableRow>
 
@@ -235,20 +236,20 @@
 
             <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_nest_verified"
+                app:column="verified"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Nest Verified"
-                app:column="nest_verified"
                 android:onClick="onSetCheckBox"/>
 
             <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_nest_not_verified"
+                app:column="notVerified"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Nest Not Verified"
-                app:column="nest_not_verified"
                 android:onClick="onSetCheckBox"/>
         </TableRow>
 
@@ -266,20 +267,20 @@
 
             <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_nest_relocated"
+                app:column="nestRelocated"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Nest Relocated"
-                app:column="nest_relocated"
                 android:onClick="onSetCheckBox"/>
 
             <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_false_crawl"
+                app:column="falseCrawl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="False Crawl"
-                app:column="false_crawl"
                 android:onClick="onSetCheckBox"/>
         </TableRow>
 
@@ -297,10 +298,10 @@
 
             <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_possible_false_crawl"
+                app:column="possibleFalseCrawl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Possible False Crawl"
-                app:column="possible_false_crawl"
                 android:onClick="onSetCheckBox"/>
         </TableRow>
 
@@ -318,20 +319,20 @@
             <com.vaporware.nestreporterv2.SCheckBox
 
                 android:id="@+id/bool_abandoned_body_pits"
+                app:column="abandonedBodyPits"
                 android:layout_weight="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Abandoned Body Pits"
-                app:column="abandoned_body_pits"
                 android:onClick="onSetCheckBox"/>
 
             <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_abandoned_egg_cavities"
+                app:column="abandonedEggCavities"
                 android:layout_weight="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Abandoned Egg Cavities"
-                app:column="abandoned_egg_cavities"
                 android:onClick="onSetCheckBox"/>
         </TableRow>
         <TableRow
@@ -347,11 +348,11 @@
             >
             <com.vaporware.nestreporterv2.SCheckBox
                 android:id="@+id/bool_no_digging"
+                app:column="noDigging"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="No Digging"
-                app:column="no_digging"
                 android:onClick="onSetCheckBox"
                 />
         </TableRow>
@@ -388,6 +389,7 @@
             app:layout_constraintTop_toBottomOf="@+id/tableRow15">
 
             <RadioGroup
+                android:id="@+id/species_radio_group"
                 android:layout_weight="1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -395,7 +397,7 @@
                 >
 
                 <RadioButton
-                    android:id="@+id/radioButton4"
+                    android:id="@+id/radio_loggerhead"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -403,7 +405,7 @@
                     android:onClick="onClickRadio"/>
 
                 <RadioButton
-                    android:id="@+id/radioButton3"
+                    android:id="@+id/radio_green"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -411,7 +413,7 @@
                     android:onClick="onClickRadio"/>
 
                 <RadioButton
-                    android:id="@+id/radioButton"
+                    android:id="@+id/radio_other"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -424,6 +426,7 @@
                 android:id="@+id/edit_other_species"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:tag="speciesOther"
                 android:ems="10"
                 android:inputType="textPersonName" />
 

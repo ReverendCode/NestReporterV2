@@ -4,76 +4,70 @@ import android.arch.lifecycle.LiveData
 import android.util.Log
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Transaction
 import com.kiwimob.firestore.livedata.livedata
 import kotlinx.coroutines.experimental.async
 
 
-class FireStoreRepository {
+class FireStoreRepository(email: String) {
     private val fireDb = FirebaseFirestore.getInstance()
             .collection("Sections")
-            .document("Section 1")
-            .collection("Reports")
-    private var vals = fireDb.document("Values")
-
-    fun getReport(id: String): LiveData<Report> {
-        val document = fireDb.document(id)
-        Log.d("fireReport",document.toString())
-        return document.livedata(Report::class.java)
-    }
-
-    suspend fun getStaticReport(id: String): Report {
-        val documents = fireDb.document(id)
-        if (documents.get().isSuccessful) {
-            Log.d("staticReport","Success: ${documents.get().result.toObject(Report::class.java)}")
-        }
-        val deferred = async{
-             Tasks.await(documents.get()).toObject(Report::class.java)
-        }
-
-            return deferred.await() ?: Report()
-    }
-
+            .document(email)
+    private val reports =  fireDb.collection("Reports")
+    private val state = fireDb.collection("StateCollection").document("State")
 
     fun getAllReports(): LiveData<List<Report>> {
-        val foo = fireDb.livedata(Report::class.java)
-        Log.d("getAllReports", foo.value.toString())
-        return foo
+        return reports.livedata(Report::class.java)
     }
 
-    fun updateReport(report: Report) {
-        var updatedReport = report
-        Log.d("updatedReport",updatedReport.toString())
-        if (updatedReport.reportId == "0") {
-            val ref = fireDb.document()
-            updatedReport = updatedReport.copy(reportId = ref.id)
-            ref.set(updatedReport)
-        } else fireDb.document(updatedReport.reportId).set(updatedReport)
-        vals.update("current", updatedReport.reportId)
+    fun getReport(reportId: String): LiveData<Report> {
+        return reports.document(reportId).livedata(Report::class.java)
     }
 
-    fun deleteReport(report: Report) {
-        if (report.reportId != "") fireDb.document(report.reportId.toString()).delete()
-    }
-
-    fun getState(): Values {
-        val document = vals
-        var returnValues: Values? = null
-        document.get().addOnCompleteListener {
-            returnValues = if (it.isSuccessful) {
-                val foo = it.result
-                if (foo.exists()) {
-                    foo.toObject(Values::class.java)!!
-                } else Values()
-            } else Values()
+    fun getState(): NestAppState {
+        var appState: NestAppState? = null
+        state.get().addOnSuccessListener {
+            appState = it.toObject(NestAppState::class.java)
         }
-        return returnValues ?:Values()
+        return appState!!
+    }
+    fun getLiveState(): LiveData<NestAppState> {
+        return state.livedata(NestAppState::class.java)
+    }
+    fun putState(updatedState: NestAppState) {
+        state.set(updatedState)
+    }
+    fun changeReport(nextId: String) {
+        state.update("currentId", nextId)
+    }
+    fun updateReport(reportId: String, pair: Pair<String, Any>) {
+        reports.document(reportId).update(pair.first ,pair.second)
+    }
+    fun deleteReport(reportId: String): String {
+        var returnId = ""
+        FirebaseFirestore.getInstance().runTransaction {
+            it.delete(reports.document(reportId))
+            val remainingReportsList = mutableListOf<String>()
+            reports.get().addOnSuccessListener { snap ->
+                snap.forEach { query ->
+                    remainingReportsList.add(query.id)
+                }
+            }
+            returnId = if (remainingReportsList.isEmpty()) {
+                createReport()
+            } else {
+                remainingReportsList.last()
+            }
+        }
+        return returnId
     }
 
-    fun getLiveState(): LiveData<Values> {
-        return fireDb.document("Values").livedata(Values::class.java)
-    }
-
-    fun putState(state: Values) {
-        fireDb.document("Values").set(state)
+    fun createReport(): String {
+        val freshReport = reports.document()
+        Log.d("createReport","creating with id: ${freshReport.id}")
+        val freshId = freshReport.id
+        freshReport.set(Report(Info(reportId = freshId)))
+        return freshId
     }
 }
+

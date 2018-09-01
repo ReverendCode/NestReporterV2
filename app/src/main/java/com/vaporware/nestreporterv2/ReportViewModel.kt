@@ -5,93 +5,62 @@ import android.arch.lifecycle.AndroidViewModel
 import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.Transformations
 import android.util.Log
-import kotlinx.coroutines.experimental.launch
-import java.util.*
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 
 class ReportViewModel(application: Application): AndroidViewModel(application) {
-    private var currentReport: LiveData<Report>? = null
-    private var fireRepository = FireStoreRepository()
+    private val email = GoogleSignIn.getLastSignedInAccount(application)?.email ?: "Default"
+    private val fireStore = FireStoreRepository(email)
+    private var appState = fireStore.getLiveState()
+    private var currentId: String? = null
 
-    fun getLiveReport(): LiveData<Report> {
-        val reportId = getValues().current
-        return fireRepository.getReport(reportId)
-    }
+    fun getLiveNestId(): LiveData<String?> {
 
-    suspend fun getCurrentReport(): Report {
-        val reportId = getValues().current
-        Log.d("getCurrent",reportId)
-        val reportData =  fireRepository.getStaticReport(reportId)
-//        val reportData = currentReport
-        Log.d("getCurrent", reportData.toString())
-        return reportData
-    }
-
-    fun updateCurrentReport(reportId: String) {
-//        reportRepository.updateValues(values?.value!!.copy(current = reportId))
-        val updateMe = getValues().copy(current = reportId)
-        fireRepository.putState(updateMe)
-    }
-
-    fun changeCurrentReport(reportId: String) {
-        Log.d("changeReportPre",currentReport?.value.toString())
-        currentReport = fireRepository.getReport(reportId)
-        val vals = getValues()
-        fireRepository.putState(vals.copy(current = reportId))
-        Log.d("changeReportPost",currentReport?.value.toString())
-    }
-
-    fun deleteReport(toDelete: Report) {
-        fireRepository.deleteReport(toDelete)
-    }
-
-    fun updateReport(updatedReport: Report) {
-        fireRepository.updateReport(updatedReport)
-    }
-
-    fun createNewReport() {
-
-        fireRepository.updateReport(Report())
-    }
-
-    private fun getValues(): Values {
-        return fireRepository.getState()
-    }
-
-    fun getLiveValues(): LiveData<Values> {
-        return fireRepository.getLiveState()
-    }
-
-    fun incrementNest(): Int {
-        val incremented = getValues().highestNest
-        Log.d("incrementNest", "Value: $incremented")
-        val updatedValues = getValues().copy(highestNest = incremented + 1)
-//        reportRepository.updateValues(values?.value!!.copy(highestNest = incremented + 1))
-        fireRepository.putState(updatedValues)
-
-        return incremented
-
-    }
-
-    fun incrementFalseCrawl(): Int {
-        val incremented = getValues().highestFalseCrawl
-        val updatedValues = getValues().copy(highestFalseCrawl = incremented+1)
-//        reportRepository.updateValues(values?.value!!.copy(highestFalseCrawl = values?.value!!.highestFalseCrawl+1))
-        fireRepository.putState(updatedValues)
-        return incremented
-
-    }
-
-    fun getReportNameList(): LiveData<MutableList<Pair<String,String>>> {
-        return Transformations.map(fireRepository.getAllReports()) {
-            val names = mutableListOf<Pair<String, String>>()
-            for (report in it) {
-                val name = when (report.nestType) {
-                    NestType.FalseCrawl,NestType.PossibleFalseCrawl -> "False Crawl ${report.falseCrawlNumber?:"unset"}"
-                    else -> "Nest ${report.nestNumber?:"unset"}"
-                }
-                names.add(name to report.reportId)
+        return Transformations.map(appState) {
+            Log.d("GetLiveNestId","performing transformation: $it")
+            if (it == null) {
+                val freshId = fireStore.createReport()
+                val updatedState = NestAppState(currentId = freshId)
+                Log.d("getLiveNestId","No state found, generating: $updatedState new reportID: $freshId")
+                fireStore.putState(updatedState)
+                currentId = freshId
+                freshId
+            } else {
+                currentId = it.currentId
+                it.currentId
             }
-            return@map names
         }
+    }
+
+    fun getLiveReport(reportId: String): LiveData<Report> {
+        val report = fireStore.getReport(reportId)
+        currentId = reportId
+        return report
+        }
+
+    fun deleteReport() {
+        val next = fireStore.deleteReport(currentId!!)
+        changeReport(next)
+    }
+
+    fun createAndSwitchToNest() {
+        changeReport(fireStore.createReport())
+    }
+
+    private fun changeReport(next: String) {
+        currentId = next
+        fireStore.changeReport(next)
+    }
+    fun updateReport(location: String, vararg pairs: Pair<String, Any> ) {
+        val freshId = getNestId()
+        for (pair in pairs) {
+            Log.d("updateReport", "Updating pair: $pair in $location at id: $freshId")
+            fireStore.updateReport(freshId, "$location.${pair.first}" to pair.second)
+        }
+    }
+    private fun getNestId(): String {
+        if (currentId == null) {
+            currentId = fireStore.getState().currentId
+        }
+        return currentId!!
     }
 }

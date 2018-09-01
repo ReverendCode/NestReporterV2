@@ -1,6 +1,5 @@
 package com.vaporware.nestreporterv2
 
-import android.annotation.SuppressLint
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
@@ -17,7 +16,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.RadioButton
+import android.widget.EditText
 import android.widget.Toast
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -28,33 +27,27 @@ import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_info.*
 import kotlinx.coroutines.experimental.launch
-import java.text.SimpleDateFormat
 
 lateinit var viewModel: ReportViewModel
-//var aReport: Report? = null
 
 class MainActivity : AppCompatActivity() {
-    //keep your list of fragments to be generated here.
     val fragmentList = listOf(R.layout.fragment_info)
     private var mSectionsPagerAdapter: SectionsPagerAdapter? = null
-    private val debugOauthClientId = "625582312057-mft8ce438s5dt5rfujufd7dlsavt5bk9.apps.googleusercontent.com"
 
+    private val debugOauthClientId = "625582312057-mft8ce438s5dt5rfujufd7dlsavt5bk9.apps.googleusercontent.com"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val account = GoogleSignIn.getLastSignedInAccount(this)
+        viewModel = ViewModelProviders.of(this).get(ReportViewModel::class.java)
         openReporter(account)
-
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 9999) {
-            Log.d("activityResult","code 9999 caught")
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             handleSignIn(task)
-
         }
     }
 
@@ -63,7 +56,6 @@ class MainActivity : AppCompatActivity() {
             val account = task.getResult(ApiException::class.java)
             openReporter(account)
         } catch (ex: ApiException) {
-            Log.e("handleSignIn", ex.statusCode.toString())
             openReporter(null)
         }
     }
@@ -83,7 +75,6 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             setContentView(R.layout.activity_main)
-            viewModel = ViewModelProviders.of(this).get(ReportViewModel::class.java)
             setSupportActionBar(toolbar)
             // Create the adapter that will return a fragment for each of the
             // primary sections of the activity.
@@ -93,23 +84,10 @@ class MainActivity : AppCompatActivity() {
             container.addOnPageChangeListener(TabLayout.TabLayoutOnPageChangeListener(tabs))
             tabs.addOnTabSelectedListener(TabLayout.ViewPagerOnTabSelectedListener(container))
 
-            viewModel.getReportNameList().observe(this, Observer {
-                val menu = nav_view.menu
-                menu.clear()
-                for (item in it!!) {
-                    menu.add(item.first).setOnMenuItemClickListener { foo ->
-                        Log.d("menuClick", "in callback for menu click item: $foo, reportID: ${item.second}")
-                        viewModel.updateCurrentReport(item.second)
-                        nav_drawer.closeDrawers()
-                        true
-                    }
-                }
-            })
+
             fab.setOnClickListener {
                 Toast.makeText(applicationContext, "Creating new Report", Toast.LENGTH_LONG).show()
-                launch {
-                    viewModel.createNewReport()
-                }
+                viewModel.createAndSwitchToNest()
             }
 
         }
@@ -126,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         // as you specify a parent activity in AndroidManifest.xml.
         val id = item.itemId
 
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_delete) {
             return true
         }
 
@@ -140,81 +118,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onClickRadio(view: View) {
-        launch {
-            val rad = view as RadioButton
-            var updatedReport = viewModel.getCurrentReport()//aReport!!
-            when (rad.text) {
-                "Green" -> updatedReport = updatedReport.copy(species = Species.Green)
-                "Loggerhead" -> updatedReport = updatedReport.copy(species = Species.Loggerhead)
-                "Other" -> {
-                    updatedReport = updatedReport.copy(species = Species.Other)
-                }
+        when (view) {
+            radio_loggerhead -> viewModel.updateReport("infoTab","species" to Species.Loggerhead.name)
+            radio_green -> viewModel.updateReport("infoTab","species" to Species.Green.name)
+            radio_other -> {
+                viewModel.updateReport("infoTab","species" to Species.Other.name,
+                        "speciesOther" to edit_other_species.text.toString())
             }
-            update(updatedReport)
         }
     }
-//      Todo: There ought to be a better way.
 
     fun onSetCheckBox(view: View) {
-//        var updatedReport = updateReportFromUi(this)
-       launch {
-           var updatedReport = viewModel.getCurrentReport()//aReport
-           when (view) {
-               bool_abandoned_body_pits -> updatedReport = updatedReport.copy(abandonedBodyPits = bool_abandoned_body_pits.isChecked)
-               bool_abandoned_egg_cavities -> updatedReport = updatedReport.copy(abandonedEggCavities = bool_abandoned_egg_cavities.isChecked)
-               bool_no_digging -> updatedReport = updatedReport.copy(noDigging = bool_no_digging.isChecked)
-           }
-           update(updateNestType(view, updatedReport))
-       }
+        val item = view as SCheckBox
+        Log.d("onSetCheckBox","updating values: ${item.column}")
+        viewModel.updateReport("infoTab",item.column.toString() to item.isChecked)
     }
 
 
     fun handleMenuClick(menuItem: MenuItem) {
-        launch {
-            viewModel.deleteReport(viewModel.getCurrentReport())
+        if (menuItem.itemId == R.id.action_delete) {
+            viewModel.deleteReport()
         }
     }
 
-    private fun updateNestType(view: View, report: Report): Report {
-        var updatedReport = report
-        val box = view as SCheckBox
-        if (box.isChecked) {//isTrue
-            when (view) {
-                bool_nest_verified -> {
-                    updatedReport = updatedReport.copy(nestType = NestType.Verified)
-                    if (updatedReport.nestNumber == null) {
-                        updatedReport = updatedReport.copy(nestNumber = viewModel.incrementNest())
-                    }
-                }
-                bool_nest_relocated -> {
-                    updatedReport = updatedReport.copy(nestType = NestType.Verified, nestRelocated = true)
-                }
-                bool_false_crawl -> {
-                    updatedReport = updatedReport.copy(nestType = NestType.FalseCrawl)
-                    if (updatedReport.falseCrawlNumber == null) {
-                        updatedReport = updatedReport.copy(falseCrawlNumber = viewModel.incrementFalseCrawl())
-                    }
-                }
-                bool_possible_false_crawl -> {
-                    updatedReport = updatedReport.copy(nestType = NestType.PossibleFalseCrawl)
-                    if (updatedReport.falseCrawlNumber == null) {
-                        updatedReport = updatedReport.copy(falseCrawlNumber = viewModel.incrementFalseCrawl())
-                    }
-                }
-                bool_nest_not_verified -> updatedReport = updatedReport.copy(nestType = NestType.Unverified)
-            }
-        } else {
-            when (view) {
-                bool_false_crawl, bool_nest_verified -> updatedReport = updatedReport.copy(nestType = NestType.None)
-            }
-        }
-        return updatedReport
-    }
-    private fun update(report: Report) {
-        launch {
-            viewModel.updateReport(report)
-        }
-    }
     /**
      * A [FragmentPagerAdapter] that returns a fragment corresponding to
      * one of the sections/tabs/pages.
@@ -239,66 +165,59 @@ class MainActivity : AppCompatActivity() {
 
         override fun onActivityCreated(savedInstanceState: Bundle?) {
             super.onActivityCreated(savedInstanceState)
-
-            viewModel.getLiveValues().observe(this, Observer {
-                Log.d("observingValues", "values: $it")
+            Log.d("onActivityCreated", "attempting to observe LiveNestId")
+            viewModel.getLiveNestId().observe(this, Observer {
+                Log.d("in observer","trying to observe: $it")
                 if (it != null) {
-                    viewModel.getLiveReport().removeObservers(this)
-                    viewModel.changeCurrentReport(it.current)
-                    viewModel.getLiveReport().observe(this, Observer {foo ->
-                        Log.d("observingReport",foo.toString())
-                        if (foo != null) setupInfoUI(foo)
+                    Log.d("Observing Id", it)
+                    viewModel.getLiveReport(it).observe(this, Observer { report ->
+                        if (report != null) {
+                            Log.d("Observing report", report.toString())
+                            updateUi(report)
+                        }
                     })
                 }
             })
-
-            edit_observers.addTextChangedListener(EditWatcher(Field.OBSERVERS))
-            edit_other_species.addTextChangedListener(EditWatcher(Field.OTHER_SPECIES))
+            edit_observers.addTextChangedListener(EditWatcher("observers"))
+            edit_other_species.addTextChangedListener(EditWatcher("otherSpecies"))
         }
 
-        @SuppressLint("SimpleDateFormat")
-        private fun setupInfoUI(report: Report) {
-            bool_abandoned_body_pits.isChecked = report.abandonedBodyPits
-            bool_abandoned_egg_cavities.isChecked = report.abandonedEggCavities
-            bool_no_digging.isChecked = report.noDigging
-            bool_nest_verified.isChecked = false
-            bool_nest_not_verified.isChecked = false
-            bool_false_crawl.isChecked = false
-            bool_possible_false_crawl.isChecked = false
-            edit_nest_number.text = ""
-            edit_false_crawl_number.text = ""
+         fun updateUi(report: Report) {
+            val info = report.infoTab
+            bool_abandoned_body_pits.isChecked = info.abandonedBodyPits
+            bool_abandoned_egg_cavities.isChecked = info.abandonedEggCavities
+            bool_no_digging.isChecked = info.noDigging
+            bool_false_crawl.isChecked = info.falseCrawl
+            bool_nest_verified.isChecked = info.verified
+            bool_nest_not_verified.isChecked = info.notVerified
+            bool_possible_false_crawl.isChecked = info.possibleFalseCrawl
+            bool_nest_relocated.isChecked = info.nestRelocated
             edit_possible_false_crawl_number.text = ""
-            when (report.nestType) {
-                NestType.Verified -> {
-                    bool_nest_verified.isChecked = true
-                    edit_nest_number.text = report.nestNumber.toString()
-                }
+            edit_false_crawl_number.text = ""
+            edit_nest_number.text = ""
+            if (info.verified || info.notVerified) edit_nest_number.text = info.nestNumber.toString()
+                else if (info.falseCrawl) edit_false_crawl_number.text = info.falseCrawlNumber.toString()
+            else if (info.possibleFalseCrawl) edit_possible_false_crawl_number.text = info.falseCrawlNumber.toString()
+            text_incubation_date.text = add55Days(info.dateCrawlFound).toString()
+            edit_other_species.setText(info.speciesOther)
 
-                NestType.Unverified -> {
-                    bool_nest_not_verified.isChecked = true
-                    edit_nest_number.text = report.nestNumber.toString()
-                }
+            setText(edit_observers, info.observers)
+            setText(edit_other_species, info.speciesOther)
+            when (info.species) {
 
-                NestType.FalseCrawl -> {
-                    bool_false_crawl.isChecked = true
-
-                    edit_false_crawl_number.text = report.falseCrawlNumber.toString()
+                Species.Green -> radio_green.isChecked = true
+                Species.Loggerhead -> radio_loggerhead.isChecked = true
+                Species.Other -> {
+                    radio_other.isChecked = true
+                    edit_other_species.isEnabled = true
                 }
-                NestType.PossibleFalseCrawl -> {
-                    bool_possible_false_crawl.isChecked = true
-                    bool_false_crawl.isChecked = true
-                    edit_possible_false_crawl_number.text = report.falseCrawlNumber.toString()
-                }
-                NestType.None -> {
-                    bool_nest_verified.isChecked = false
-                    bool_nest_not_verified.isChecked = false
-                    bool_false_crawl.isChecked = false
-                    bool_possible_false_crawl.isChecked = false
-                }
+                Species.None -> {}
             }
-            text_incubation_date.text = SimpleDateFormat("dd/MM/yyyy").format(add55Days(report.dateCrawlFound))
-            bool_nest_relocated.isChecked = report.nestRelocated
-            edit_other_species.isEnabled = report.species == Species.Other
+
+        }
+        private fun setText(textField: EditText, info: String) {
+                textField.setText(info)
+                textField.setSelection(textField.length())
         }
 
         companion object {

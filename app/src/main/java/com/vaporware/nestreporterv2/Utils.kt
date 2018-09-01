@@ -20,16 +20,12 @@ class DatePickerFragment : DialogFragment(), DatePickerDialog.OnDateSetListener 
     override fun onDateSet(view: DatePicker, year: Int, month: Int, day: Int) {
         val date = Calendar.getInstance()
         date.set(year,month,day)
-        when (this.tag) {
-            "crawl_found" -> {
-                launch{
-                    viewModel.updateReport(viewModel.getCurrentReport()
-                        .copy(dateCrawlFound = date.time))
-                }
+        when (view) {
+            button_crawl_found_date -> {
+                val data = date.time
+                viewModel.updateReport("infoTab","date_crawl_found" to data)
             }
-            else -> {}
         }
-        Log.d("onDateSet", this.tag)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -37,30 +33,12 @@ class DatePickerFragment : DialogFragment(), DatePickerDialog.OnDateSetListener 
         val year = c.get(Calendar.YEAR)
         val month = c.get(Calendar.MONTH)
         val day = c.get(Calendar.DAY_OF_MONTH)
-        Log.d("year",year.toString())
         return DatePickerDialog(activity,
                 this, year, month, day)
     }
 }
-class EditWatcher(private val tag: Field): TextWatcher {
 
-    override fun afterTextChanged(change: Editable?) {
-       launch {
-           var updatedReport = viewModel.getCurrentReport()
-           updatedReport = when (tag) {
-               Field.OBSERVERS -> updatedReport.copy(observers = change.toString())
-               Field.OTHER_SPECIES -> updatedReport.copy(speciesOther = change.toString())
 
-           }
-           viewModel.updateReport(updatedReport)
-       }
-    }
-    override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-    }
-    override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-    }
-
-}
 
 fun add55Days(date: Date): Date {
     val cal = Calendar.getInstance()
