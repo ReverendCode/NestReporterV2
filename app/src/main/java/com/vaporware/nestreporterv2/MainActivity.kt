@@ -9,13 +9,13 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Toast
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -26,7 +26,6 @@ import com.google.android.gms.tasks.Task
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_info.*
-import kotlinx.coroutines.experimental.launch
 
 lateinit var viewModel: ReportViewModel
 
@@ -38,9 +37,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val account = GoogleSignIn.getLastSignedInAccount(this)
-        viewModel = ViewModelProviders.of(this).get(ReportViewModel::class.java)
-        openReporter(account)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -87,11 +83,10 @@ class MainActivity : AppCompatActivity() {
 
             fab.setOnClickListener {
                 Toast.makeText(applicationContext, "Creating new Report", Toast.LENGTH_LONG).show()
-                viewModel.createAndSwitchToNest()
             }
-
         }
     }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -129,11 +124,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onSetCheckBox(view: View) {
-        val item = view as SCheckBox
-        Log.d("onSetCheckBox","updating values: ${item.column}")
-        viewModel.updateReport("infoTab",item.column.toString() to item.isChecked)
-    }
+        val map = getButtonMap()
+        val checkbox = view as CheckBox
 
+    }
 
     fun handleMenuClick(menuItem: MenuItem) {
         if (menuItem.itemId == R.id.action_delete) {
@@ -165,33 +159,35 @@ class MainActivity : AppCompatActivity() {
 
         override fun onActivityCreated(savedInstanceState: Bundle?) {
             super.onActivityCreated(savedInstanceState)
-            Log.d("onActivityCreated", "attempting to observe LiveNestId")
-            viewModel.getLiveNestId().observe(this, Observer {
-                Log.d("in observer","trying to observe: $it")
+            val vm = ViewModelProviders.of(this).get(RVM::class.java)
+
+            vm.getLiveCurrentId().observe(this, Observer {
                 if (it != null) {
-                    Log.d("Observing Id", it)
-                    viewModel.getLiveReport(it).observe(this, Observer { report ->
+                    vm.getLiveReport(it).removeObservers(this)
+                    vm.getLiveReport(it).observe(this, Observer { report ->
                         if (report != null) {
-                            Log.d("Observing report", report.toString())
                             updateUi(report)
                         }
                     })
                 }
             })
-            edit_observers.addTextChangedListener(EditWatcher("observers"))
-            edit_other_species.addTextChangedListener(EditWatcher("otherSpecies"))
+
+            edit_observers.addTextChangedListener(EditWatcher(Info::observers) {
+                TODO("connect viewModel report update")
+            })
+            edit_other_species.addTextChangedListener(EditWatcher(Info::speciesOther) {
+                TODO("connect viewModel report update")
+            })
         }
 
-         fun updateUi(report: Report) {
+         private fun updateUi(report: Report) {
+
+             val foo = getButtonMap()
+             for ((id, location) in foo) {
+                 activity.findViewById<SCheckBox>(id).isChecked = location.get(report.infoTab)
+             }
+
             val info = report.infoTab
-            bool_abandoned_body_pits.isChecked = info.abandonedBodyPits
-            bool_abandoned_egg_cavities.isChecked = info.abandonedEggCavities
-            bool_no_digging.isChecked = info.noDigging
-            bool_false_crawl.isChecked = info.falseCrawl
-            bool_nest_verified.isChecked = info.verified
-            bool_nest_not_verified.isChecked = info.notVerified
-            bool_possible_false_crawl.isChecked = info.possibleFalseCrawl
-            bool_nest_relocated.isChecked = info.nestRelocated
             edit_possible_false_crawl_number.text = ""
             edit_false_crawl_number.text = ""
             edit_nest_number.text = ""
@@ -215,6 +211,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
+
         private fun setText(textField: EditText, info: String) {
                 textField.setText(info)
                 textField.setSelection(textField.length())

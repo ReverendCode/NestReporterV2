@@ -7,6 +7,7 @@ import android.support.annotation.NonNull
 import java.sql.Date
 
 data class Info(
+        var headerName: String = "[Nest Unset]",
         var reportId: String = "0",
         //begin INFO Section
         var nestNumber: Int? = null,
@@ -26,6 +27,7 @@ data class Info(
 )
 
 data class Report(
+
         var infoTab: Info = Info()
 )
 
